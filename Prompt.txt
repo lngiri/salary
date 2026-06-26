@@ -1,0 +1,270 @@
+You are a senior full‑stack developer. Build a complete, production‑ready salary sheet web application for a Nepali company. The app must comply with Nepal's Income Tax Act 2058, Social Security Act 2075, Labour Act 2074, and related rules.
+
+STRICT RULES:
+- Do NOT skip any detail. Implement all calculations exactly as specified.
+- Use the following tech stack, and do NOT change it unless I explicitly ask:
+  - Frontend: React (Vite) + TypeScript, Tailwind CSS, Axios, react‑router‑dom
+  - Backend: Node.js + Express (TypeScript), Prisma ORM, PostgreSQL
+  - Authentication: simple JWT (no OAuth, just username/password for admin)
+  - Deployment ready: add Dockerfile and docker‑compose.yml
+- The app is for a SINGLE COMPANY (no multi‑tenancy), but design database so that future multi‑tenancy is possible (add organisation_id column but hardcode to 1 for now).
+- All employee data must be soft‑deleted, never physically deleted.
+- Statutory rates (tax slabs, SSF rates, minimum wage) must be stored in a config table per fiscal year, NOT hard‑coded. Provide a seed script with current Nepal fiscal year 2081/82 (2024/25) rates.
+- The entire application must be fully functional with sample data (seed 20 employees with various salaries and join dates).
+
+## DATABASE SCHEMA (Prisma)
+
+Generate a Prisma schema with these models:
+
+model Organisation {
+  id Int @id @default(autoincrement())
+  name String
+  panVat String?
+  ssfRegNo String?
+  address String?
+  employees Employee[]
+}
+
+model Employee {
+  id Int @id @default(autoincrement())
+  organisationId Int @default(1)
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  firstName String
+  lastName String
+  pan String @unique
+  ssfId String?
+  dateOfBirth DateTime?
+  phone String?
+  email String?
+  address String?
+  designation String
+  department String?
+  bankAccountNo String?
+  bankName String?
+  dateOfJoining DateTime
+  dateOfLeaving DateTime?
+  status EmployeeStatus @default(ACTIVE)
+  salaryStructures EmployeeSalaryStructure[]
+  payrollTransactions PayrollTransaction[]
+  leaveRecords LeaveRecord[]
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model FiscalYear {
+  id Int @id @default(autoincrement())
+  name String (e.g., "2081/82")
+  startDate DateTime
+  endDate DateTime
+  taxSlabs Json  // stores array of {limit, rate, type}
+  ssfEmployeeRate Float  // 0.10
+  ssfEmployerRate Float  // 0.10
+  ssfMedicalPct Float
+  ssfPensionPct Float
+  ssfAccidentPct Float
+  ssfDependentPct Float
+  ssfProvidentFundPct Float
+  minimumWage Float  // 17300
+  overtimeRateMultiplier Float @default(1.5)
+  maxOvertimeHoursPerDay Int @default(4)
+  maxOvertimeHoursPerWeek Int @default(24)
+  insurancePremiumDeductionLimit Float @default(25000)
+  medicalInsuranceDeductionLimit Float @default(20000)
+  createdAt DateTime @default(now())
+}
+
+model SalaryHead {
+  id Int @id @default(autoincrement())
+  name String (e.g., "Basic", "Dearness Allowance", "House Rent", "Medical", "Conveyance", "Overtime", "Festival Bonus")
+  type EarningOrDeduction
+  taxable Boolean @default(true)
+  ssfApplicable Boolean @default(false)   // only Basic typically
+  isSystem Boolean @default(false)        // true for Basic, Overtime, etc.
+}
+
+enum EarningOrDeduction {
+  EARNING
+  DEDUCTION
+}
+
+model EmployeeSalaryStructure {
+  id Int @id @default(autoincrement())
+  employeeId Int
+  employee Employee @relation(fields: [employeeId], references: [id])
+  salaryHeadId Int
+  salaryHead SalaryHead @relation(fields: [salaryHeadId], references: [id])
+  monthlyAmount Float
+  effectiveFrom DateTime
+  effectiveUntil DateTime?
+}
+
+model PayrollPeriod {
+  id Int @id @default(autoincrement())
+  fiscalYearId Int
+  fiscalYear FiscalYear @relation(fields: [fiscalYearId], references: [id])
+  periodStart DateTime
+  periodEnd DateTime
+  locked Boolean @default(false)
+  transactions PayrollTransaction[]
+}
+
+model PayrollTransaction {
+  id Int @id @default(autoincrement())
+  employeeId Int
+  employee Employee @relation(fields: [employeeId], references: [id])
+  payrollPeriodId Int
+  payrollPeriod PayrollPeriod @relation(fields: [payrollPeriodId], references: [id])
+  salaryHeadId Int
+  salaryHead SalaryHead @relation(fields: [salaryHeadId], references: [id])
+  amount Float
+  isEmployerContribution Boolean @default(false)  // for SSF employer part
+}
+
+model LeaveRecord {
+  id Int @id @default(autoincrement())
+  employeeId Int
+  employee Employee @relation(fields: [employeeId], references: [id])
+  leaveType String (Sick, Annual, etc.)
+  startDate DateTime
+  endDate DateTime
+  daysTaken Float
+  status LeaveStatus
+}
+
+enum LeaveStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  username String @unique
+  passwordHash String
+  role String @default("ADMIN")  // ADMIN, HR, ACCOUNTANT
+}
+
+Ensure cascade delete is set to RESTRICT for critical relations; never delete payroll data.
+
+## BACKEND (Express API)
+
+All routes must be prefixed with /api. Implement these endpoints:
+
+### Authentication
+- POST /api/auth/login (returns JWT token)
+- Middleware to protect all other routes
+
+### Employees
+- GET /api/employees (query params: ?status=ACTIVE, search by name)
+- GET /api/employees/:id
+- POST /api/employees (create new, mandatory fields: firstName, lastName, pan, designation, dateOfJoining, basicSalary)
+  - When creating, automatically add a SalaryStructure row for "Basic" using the provided basicSalary.
+- PUT /api/employees/:id (update details, but NOT pan or status except via dedicated route)
+- PUT /api/employees/:id/deactivate (soft delete: set status=INACTIVE, dateOfLeaving=now, return full final settlement calculation)
+- GET /api/employees/:id/salary-history
+
+### Salary Structures
+- GET /api/employees/:id/structures
+- POST /api/employees/:id/structures (add allowance/deduction head with amount)
+- PUT /api/structures/:id
+- DELETE /api/structures/:id
+
+### Payroll
+- POST /api/payroll/run (body: { periodStart, periodEnd, fiscalYearId })
+  - Computes payroll for all ACTIVE employees for the given period.
+  - Saves PayrollPeriod and PayrollTransactions.
+  - Returns summary.
+- GET /api/payroll/periods
+- GET /api/payroll/periods/:id (detailed transactions)
+- GET /api/payroll/payslip/:employeeId/:periodId (returns individual payslip data)
+- GET /api/payroll/etds-export?fiscalYearId=&quarter=  (generates CSV matching IRD E-TDS format)
+- GET /api/payroll/ssf-report?periodId= (generates SSF contribution statement)
+
+### Config
+- GET /api/config/fiscal-years
+- POST /api/config/fiscal-years (create new, only if admin)
+- PUT /api/config/fiscal-years/:id
+
+## BUSINESS LOGIC (MUST BE EXACT)
+
+### TDS Calculation Function (pseudocode, implement in TypeScript)
+Input: employeeId, fiscalYear, projectedAnnualGross (from current salary structures * 12), actualDeductions (SSF employee, insurance, etc.)
+
+1. Determine taxable income = projectedAnnualGross - deductions.
+2. Fetch taxSlabs JSON from fiscalYear record. Slabs are like:
+   [
+     { "limit": 500000, "rate": 0, "type": "tax" },
+     { "limit": 200000, "rate": 10, "type": "tax" },  // next 200k at 10%
+     { "limit": 300000, "rate": 20, "type": "tax" },
+     { "limit": 1000000, "rate": 30, "type": "tax" },
+     { "limit": null, "rate": 36, "type": "tax" }  // remaining
+   ]
+   Additionally, include a slab for 1% Social Security Tax (SST) on first 500,000, but note it is rebatable. For simplicity, the final tax calculated from the above table is the net tax. The SST is not separately deducted; the table given already accounts for it (as per current Nepali practice). So just apply the progressive rates.
+3. Calculate annual tax: for each slab, apply rate to the portion of taxable income within that limit.
+4. Monthly TDS = annualTax / 12. (Use simple projection; if employee joined mid-year, we can still project full-year income and deduct equally each month, as per IRD guidelines.)
+5. Return monthly TDS amount.
+
+Important: This computation must be correct for all income levels. Test with:
+   - Taxable income 400,000 => tax 0 (only 1% SST but rebated, effectively 0)
+   - Taxable income 700,000 => 10% on (700k-500k) = 20k
+   - etc.
+
+### SSF Contribution Calculation
+- employeeSsf = basicSalary * fiscalYear.ssfEmployeeRate
+- employerSsf = basicSalary * fiscalYear.ssfEmployerRate
+- Split into sub‑heads according to percentages defined in fiscalYear for medical, pension, etc. (store these sub‑amounts in separate PayrollTransaction rows with isEmployerContribution flag where needed)
+- Both contributions must appear on payslip and SSF report.
+
+### Overtime Calculation (if overtime hours are entered)
+- Hourly rate = (Basic + Dearness Allowance) / 240  (assuming 8hrs/day, 30 days or 26? Labour Act: 8hrs/day, monthly salary / 240 for hourly). Use formula: (Basic + DA) / 240.
+- Overtime amount = hourlyRate * 1.5 * overtimeHours.
+- Validate against max daily/weekly limits and warn.
+
+### Festival Bonus (Dashain)
+- Automatically computed in payroll run for periods covering Asoj/Kartik: add one month's Basic salary as a separate earning head.
+
+### Final Settlement (on deactivation)
+- Unpaid salary up to last working day.
+- Leave encashment: for each unused annual leave (max allowed accumulation), daily rate * days.
+- Gratuity: For service >= 1 year, calculate as per Labour Act: 15 days' basic salary for each completed year of service (or fractional part). Daily rate = (last drawn basic salary / 26). Total gratuity = (last basic / 26) * 15 * years. Note: if employee is in SSF, gratuity may be covered by SSF pension – but still compute as per law; the system should just compute for settlement report. No automatic payment via app.
+- Deductions for outstanding loans/advances (just a manual deduction entry).
+
+## FRONTEND (React)
+
+Build a clean, responsive admin dashboard with Tailwind CSS. Pages:
+
+- /login
+- /dashboard (summary cards: total employees, active payroll, etc.)
+- /employees (list with search, add button, import CSV button)
+- /employees/:id (detail view with salary structure, edit, deactivate button)
+- /employees/add
+- /payroll/run (select period, run payroll)
+- /payroll/history (list of periods, click to view details)
+- /payroll/:periodId (transaction details, ability to lock)
+- /reports (links to download ETDS CSV, SSF report, payslips)
+- /settings (fiscal year management, salary heads config)
+
+Use react‑query (TanStack Query) for data fetching and mutations. All API calls must include JWT in header.
+
+## ADD/REMOVE EMPLOYEE FEATURE HIGHLIGHT
+
+- Add: form with all fields, validation (PAN format, required fields). On success, redirect to employee detail. Implement bulk import: upload CSV with columns matching Employee fields; backend processes and inserts with error reporting.
+- Remove: from employee detail, click "Terminate Employment". A confirmation dialog asks for reason and last working date. On confirm, API call deactivates employee. UI then shows employee as inactive, hides from active lists, but accessible via filter "All/Inactive". The final settlement breakdown is shown as a pop‑up.
+
+## OUTPUT REQUIREMENTS
+
+Provide the complete codebase as a set of files with proper folder structure. Include:
+
+- /backend with src, prisma schema, seed.ts, Dockerfile, package.json, tsconfig.json
+- /frontend with src, components, pages, Dockerfile, package.json
+- /docker-compose.yml at root to run both + Postgres
+- README.md with setup and environment variables
+
+Start by outputting the Prisma schema, then the backend API code (controllers, services, middleware), then the frontend. Do not abbreviate; implement every file fully.
+
+Important: Do not use external mock data; create a seed script that populates the database with 20 realistic Nepali employees, one admin user (admin/admin123), salary heads (Basic, DA, HRA, Medical, Conveyance, Overtime, Festival Bonus, SSF Employee, SSF Employer, TDS), and fiscal year 2081/82 with correct rates.
+
+Begin building now.

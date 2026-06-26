@@ -1,0 +1,144 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organisation {
+  id       Int        @id @default(autoincrement())
+  name     String
+  panVat   String?
+  ssfRegNo String?
+  address  String?
+  employees Employee[]
+}
+
+model Employee {
+  id             Int                     @id @default(autoincrement())
+  organisationId Int                     @default(1)
+  organisation   Organisation            @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  firstName      String
+  lastName       String
+  pan            String                  @unique
+  ssfId          String?
+  dateOfBirth    DateTime?
+  phone          String?
+  email          String?
+  address        String?
+  designation    String
+  department     String?
+  bankAccountNo  String?
+  bankName       String?
+  dateOfJoining  DateTime
+  dateOfLeaving  DateTime?
+  status         EmployeeStatus          @default(ACTIVE)
+  salaryStructures EmployeeSalaryStructure[]
+  payrollTransactions PayrollTransaction[]
+  leaveRecords   LeaveRecord[]
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model FiscalYear {
+  id                             Int            @id @default(autoincrement())
+  name                           String
+  startDate                      DateTime
+  endDate                        DateTime
+  taxSlabs                       Json
+  ssfEmployeeRate                Float
+  ssfEmployerRate                Float
+  ssfMedicalPct                  Float
+  ssfPensionPct                  Float
+  ssfAccidentPct                 Float
+  ssfDependentPct                Float
+  ssfProvidentFundPct            Float
+  minimumWage                    Float
+  overtimeRateMultiplier         Float          @default(1.5)
+  maxOvertimeHoursPerDay         Int            @default(4)
+  maxOvertimeHoursPerWeek        Int            @default(24)
+  insurancePremiumDeductionLimit Float          @default(25000)
+  medicalInsuranceDeductionLimit Float          @default(20000)
+  createdAt                      DateTime       @default(now())
+  payrollPeriods                 PayrollPeriod[]
+}
+
+model SalaryHead {
+  id                  Int                     @id @default(autoincrement())
+  name                String                  @unique
+  type                EarningOrDeduction
+  taxable             Boolean                 @default(true)
+  ssfApplicable       Boolean                 @default(false)
+  isSystem            Boolean                 @default(false)
+  legalReference      String?
+  salaryStructures    EmployeeSalaryStructure[]
+  payrollTransactions PayrollTransaction[]
+}
+
+enum EarningOrDeduction {
+  EARNING
+  DEDUCTION
+}
+
+model EmployeeSalaryStructure {
+  id            Int       @id @default(autoincrement())
+  employeeId    Int
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  salaryHeadId  Int
+  salaryHead    SalaryHead @relation(fields: [salaryHeadId], references: [id], onDelete: Restrict)
+  monthlyAmount Float
+  effectiveFrom DateTime
+  effectiveUntil DateTime?
+}
+
+model PayrollPeriod {
+  id           Int                   @id @default(autoincrement())
+  fiscalYearId Int
+  fiscalYear   FiscalYear            @relation(fields: [fiscalYearId], references: [id], onDelete: Restrict)
+  periodStart  DateTime
+  periodEnd    DateTime
+  locked       Boolean               @default(false)
+  transactions PayrollTransaction[]
+}
+
+model PayrollTransaction {
+  id                      Int           @id @default(autoincrement())
+  employeeId              Int
+  employee                Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  payrollPeriodId         Int
+  payrollPeriod           PayrollPeriod @relation(fields: [payrollPeriodId], references: [id], onDelete: Restrict)
+  salaryHeadId            Int
+  salaryHead              SalaryHead    @relation(fields: [salaryHeadId], references: [id], onDelete: Restrict)
+  amount                  Float
+  isEmployerContribution  Boolean       @default(false)
+}
+
+model LeaveRecord {
+  id        Int        @id @default(autoincrement())
+  employeeId Int
+  employee  Employee   @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  leaveType String
+  startDate DateTime
+  endDate   DateTime
+  daysTaken Float
+  status    LeaveStatus
+}
+
+enum LeaveStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+model User {
+  id           Int    @id @default(autoincrement())
+  username     String @unique
+  passwordHash String
+  role         String @default("ADMIN")
+}

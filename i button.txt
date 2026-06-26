@@ -1,0 +1,67 @@
+I need to add an "info" feature to my existing Nepali salary sheet webapp. The tech stack is React (Vite + TypeScript + Tailwind CSS) frontend, Node.js Express (TypeScript) backend, Prisma ORM, PostgreSQL.
+
+## WHAT TO IMPLEMENT
+
+Add a small (i) icon/button next to every salary earning/deduction line item in the UI. When the user clicks or hovers, a tooltip or popup must show:
+- The legal reference: exact Nepali law name, dafa, upadafa, niyamawali number.
+- A short explanation of the calculation.
+- A disclaimer (small text): "यहाँ प्रस्तुत जानकारी जानकारीमूलक उद्देश्यका लागि मात्र हो। कुनै पनि कानुनी विवादमा आधिकारिक कानुनी पाठलाई नै मान्यता दिइनेछ।"
+
+## WHERE TO ADD
+
+1. **Employee Salary Structure page** (frontend/src/pages/EmployeeDetail.tsx): Next to each salary head (Basic, DA, HRA, Medical, Conveyance, etc.) when viewing an employee's salary structure.
+
+2. **Payroll Period Detail page** (frontend/src/pages/PayrollPeriodDetail.tsx): In the transaction table, next to each salary head name (earning/deduction) for each employee.
+
+3. **Individual Payslip** (frontend/src/pages/Payslip.tsx): Beside every earning and deduction line.
+
+4. **Payroll Run page** (if it shows a preview of calculations).
+
+Also, in the **Settings** → **Salary Heads** management (if exists), the admin should be able to edit the legal reference for each head. If that page doesn't exist, build a simple one.
+
+## LEGAL REFERENCES (Nepali – exact text to use)
+
+- **Basic Salary (आधारभूत तलब):** श्रम ऐन, २०७४, दफा १२(१) र न्यूनतम पारिश्रमिक सम्बन्धी सरकारी सूचना।
+- **Dearness Allowance (महँगी भत्ता):** श्रम ऐन, २०७४, दफा १३(क) तथा श्रम नियमावली, २०७५, नियम ७।
+- **House Rent Allowance (घरभाडा भत्ता):** श्रम ऐन, २०७४, दफा १३(ख) – कम्पनीको नीति अनुसार तोकिएको।
+- **Medical Allowance (चिकित्सा भत्ता):** श्रम नियमावली, २०७५, नियम ८ – रोजगारदाताले तोकेको रकम।
+- **Conveyance Allowance (यातायात भत्ता):** श्रम नियमावली, २०७५, नियम ९ – कार्यालय आउजाउ खर्च।
+- **Overtime (अतिरिक्त समय):** श्रम ऐन, २०७४, दफा २८(१) र (२), श्रम नियमावली, २०७५, नियम १८(३) – प्रतिघण्टा दर (आधार+महँगी भत्ता)/२४० × १.५।
+- **Festival Bonus (दशैं भत्ता):** श्रम ऐन, २०७४, दफा ३८ – एक महिनाको आधारभूत तलब बराबर।
+- **TDS (कर कट्टी):** आयकर ऐन, २०५८, दफा ८७(१) तथा अर्थ ऐनको अनुसूची १ – प्रगतिशील दरमा आयकर।
+- **Social Security Tax (सामाजिक सुरक्षा कर – १% SST):** आयकर ऐन, २०५८, दफा ८७(२) – पहिलो ५ लाखमा १% कर, तर कर फिर्ता हुने।
+- **SSF Employee Contribution (सामाजिक सुरक्षा कोष – कर्मचारी अंश):** सामाजिक सुरक्षा ऐन, २०७५, दफा १५(क), सामाजिक सुरक्षा नियमावली, २०७६, नियम १०(१)।
+- **SSF Employer Contribution (रोजगारदाता अंश):** सामाजिक सुरक्षा ऐन, २०७५, दफा १५(ख), सामाजिक सुरक्षा नियमावली, २०७६, नियम १०(२)।
+- **Gratuity (ग्र्याच्युइटी):** श्रम ऐन, २०७४, दफा ४९(२) – १५ दिन प्रति वर्ष (अन्तिम तलब/२६ × १५ × सेवा वर्ष)। SSF मा आबद्ध भएमा दफा ४९(५) बमोजिम ग्र्याच्युइटी लागु नहुन सक्छ।
+- **Leave Encashment (बिदा रकम):** श्रम ऐन, २०७४, दफा ३६(७) तथा श्रम नियमावली, २०७५, नियम २२।
+- **Provident Fund (यदि SSF बाहिर भए):** श्रम ऐन, २०७४, दफा ५३ – १०%+१०%।
+- **Bonus (नाफा बोनस):** बोनस ऐन, २०३० – रोजगारदाताको नाफाको १०% (गणना प्रणालीमा हुँदैन, तर जानकारीको लागि उल्लेख गर्न सकिन्छ)।
+
+## IMPLEMENTATION DETAILS
+
+### Backend
+- Extend the Prisma model `SalaryHead` to include an optional string field `legalReference` (text in Nepali).
+- Add migration, update seed file to populate legal references for default salary heads (Basic, DA, HRA, Medical, Conveyance, Overtime, Festival Bonus, SSF Employee, SSF Employer, TDS, Leave Encashment, Gratuity). Use the exact legal references above.
+- Ensure the API `GET /api/salary-heads` returns the legalReference field.
+- Add a new API endpoint for admins to update a salary head's legalReference: `PUT /api/salary-heads/:id`.
+
+### Frontend
+- Create a reusable React component `LegalInfoIcon` that takes `legalReference` as prop and renders a small circled (i) icon (using an SVG or Unicode ⓘ). On hover/click, show a tooltip (use a lightweight tooltip library like `react-tooltip` or a simple absolute positioned div).
+- Integrate this component into:
+  - The salary structure view (employee detail) – next to each `SalaryHead` name.
+  - Payroll transaction table – next to the head name in each row.
+  - Payslip – next to each earning/deduction line.
+- For components that map over salary heads, use `legalReference` from the fetched data. If `legalReference` is null/empty, don't show the icon.
+- In the payslip and transactions, you might not have the legal reference directly. In that case, join the `SalaryHead` model when fetching payroll transactions (or fetch salary heads separately and create a map). Modify backend endpoints `GET /api/payroll/periods/:id` and `GET /api/payroll/payslip/:employeeId/:periodId` to include `salaryHead.legalReference` in the response.
+- Build a simple admin page `/settings/salary-heads` that lists all salary heads with an edit button to modify the `legalReference` text. Use a modal or inline editing.
+
+### Disclaimer
+- The `LegalInfoIcon` component must display the disclaimer in small text at the bottom of the tooltip content. The disclaimer text: "यहाँ प्रस्तुत जानकारी जानकारीमूलक उद्देश्यका लागि मात्र हो। कुनै पनि कानुनी विवादमा आधिकारिक कानुनी पाठलाई नै मान्यता दिइनेछ।"
+
+## TESTING
+After changes, ensure the seed runs successfully, and the app works. The admin page must allow editing and saving legal references.
+
+## OUTPUT
+Provide the complete code changes: modified Prisma schema, migration, seed file, backend controllers/routes, frontend components, and any updated pages. If the project uses any specific tooltip library, choose `react-tooltip` (install it via npm). Update package.json if needed.
+
+Start working now.
