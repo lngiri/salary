@@ -26,3 +26,6 @@ postgres-data/
 
 # Test coverage
 coverage/
+
+# Kimchi workflow files
+.kimchi/

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: salary-app
+    runtime: node
+    repo: https://github.com/lngiri/salary
+    buildCommand: yarn && yarn build
+    startCommand: yarn start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
