@@ -3,7 +3,7 @@ services:
     name: salary-app
     runtime: node
     repo: https://github.com/lngiri/salary
-    buildCommand: yarn && yarn build
+    buildCommand: yarn install; yarn build
     startCommand: yarn start
     envVars:
       - key: NODE_ENV
