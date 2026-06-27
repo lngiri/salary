@@ -6,7 +6,7 @@ interface CardProps {
 }
 
 export const Card = ({ children, className = '' }: CardProps) => (
-  <div className={`bg-white rounded-xl shadow-sm border border-gray-200 ${className}`}>
+  <div className={`bg-white rounded-xl shadow-soft border border-surface-200 ${className}`}>
     {children}
   </div>
 );
@@ -17,7 +17,7 @@ interface CardHeaderProps {
 }
 
 export const CardHeader = ({ children, className = '' }: CardHeaderProps) => (
-  <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>
+  <div className={`px-6 py-4 border-b border-surface-200 ${className}`}>
     {children}
   </div>
 );

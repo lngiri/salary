@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { Users, CheckCircle, CalendarDays, ArrowRight, Wallet, BarChart3, Settings } from 'lucide-react';
+import { Users, CheckCircle, CalendarDays, ArrowRight, Wallet, BarChart3, Settings, TrendingUp } from 'lucide-react';
 import { Card, CardBody } from '../components/Card';
 import { FullPageLoader } from '../components/LoadingSpinner';
 import { Link } from 'react-router-dom';
@@ -20,20 +20,27 @@ interface QuickLinkProps {
 const QuickLink = ({ to, icon: Icon, label, description, variant = 'default' }: QuickLinkProps) => (
   <Link
     to={to}
-    className={`flex items-center gap-4 p-4 rounded-xl border transition-colors hover:shadow-md ${
+    className={`flex items-center gap-4 p-5 rounded-xl border transition-all duration-200 card-hover ${
       variant === 'primary'
-        ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-        : 'bg-white border-gray-200 hover:border-gray-300'
+        ? 'bg-gradient-to-r from-primary-50 to-blue-50 border-primary-200 hover:border-primary-300'
+        : 'bg-white border-surface-200 hover:border-surface-300'
     }`}
   >
-    <div className={`p-3 rounded-lg ${variant === 'primary' ? 'bg-blue-100' : 'bg-gray-100'}`}>
-      <Icon className={variant === 'primary' ? 'text-blue-600' : 'text-gray-600'} size={24} />
+    <div className={`p-3 rounded-xl ${
+      variant === 'primary'
+        ? 'bg-gradient-to-br from-primary-500 to-primary-600 shadow-glow'
+        : 'bg-surface-100'
+    }`}>
+      <Icon
+        size={22}
+        className={variant === 'primary' ? 'text-white' : 'text-surface-600'}
+      />
     </div>
-    <div>
-      <p className="font-medium text-gray-900">{label}</p>
-      <p className="text-sm text-gray-500">{description}</p>
+    <div className="flex-1">
+      <p className="font-semibold text-surface-900">{label}</p>
+      <p className="text-sm text-surface-500 mt-0.5">{description}</p>
     </div>
-    <ArrowRight className="ml-auto text-gray-400" size={20} />
+    <ArrowRight size={18} className="text-surface-300 group-hover:text-primary-500 transition-colors" />
   </Link>
 );
 
@@ -64,51 +71,59 @@ export const Dashboard = () => {
       label: 'Total Employees',
       value: totalEmployees?.count ?? 0,
       icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      gradient: 'from-blue-500 to-blue-600',
+      bg: 'bg-blue-50',
     },
     {
       label: 'Active Employees',
       value: activeEmployees?.count ?? 0,
       icon: CheckCircle,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
+      gradient: 'from-emerald-500 to-emerald-600',
+      bg: 'bg-emerald-50',
     },
     {
-      label: 'Payroll Periods Run',
+      label: 'Payroll Periods',
       value: payrollPeriods?.count ?? 0,
       icon: CalendarDays,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      gradient: 'from-purple-500 to-purple-600',
+      bg: 'bg-purple-50',
     },
   ];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Overview of your salary sheet data</p>
+        <div className="flex items-center gap-3 mb-1">
+          <TrendingUp size={24} className="text-primary-600" />
+          <h1 className="text-2xl lg:text-3xl font-bold text-surface-900">Dashboard</h1>
+        </div>
+        <p className="text-surface-500 mt-1 ml-10">Overview of your salary sheet data</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardBody className="flex items-center gap-4">
-              <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={stat.color} size={28} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stat.value.toLocaleString()}</p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-              </div>
-            </CardBody>
-          </Card>
+        {stats.map((stat, i) => (
+          <div key={stat.label} className="animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
+            <Card className="card-hover">
+              <CardBody className="flex items-center gap-4 p-6">
+                <div className={`p-3.5 rounded-xl bg-gradient-to-br ${stat.gradient} shadow-soft`}>
+                  <stat.icon className="text-white" size={24} />
+                </div>
+                <div>
+                  <p className="text-2xl lg:text-3xl font-bold text-surface-900">{stat.value.toLocaleString()}</p>
+                  <p className="text-sm text-surface-500 mt-0.5">{stat.label}</p>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
         ))}
       </div>
 
       {/* Quick Links */}
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold text-surface-900">Quick Actions</h2>
+        <p className="text-sm text-surface-500 mt-0.5">Common tasks and shortcuts</p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <QuickLink
           to="/employees"

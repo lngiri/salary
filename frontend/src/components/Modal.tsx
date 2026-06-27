@@ -29,7 +29,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
       >
-        <div className="fixed inset-0 bg-black/30" />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
       </TransitionChild>
 
       <div className="fixed inset-0 overflow-y-auto">
@@ -37,18 +37,18 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           <TransitionChild
             as={Fragment}
             enter="ease-out duration-300"
-            enterFrom="opacity-0 scale-95"
-            enterTo="opacity-100 scale-100"
+            enterFrom="opacity-0 scale-95 translate-y-4"
+            enterTo="opacity-100 scale-100 translate-y-0"
             leave="ease-in duration-200"
-            leaveFrom="opacity-100 scale-100"
-            leaveTo="opacity-0 scale-95"
+            leaveFrom="opacity-100 scale-100 translate-y-0"
+            leaveTo="opacity-0 scale-95 translate-y-4"
           >
-            <DialogPanel className={`w-full ${sizeClasses[size]} bg-white rounded-xl shadow-xl`}>
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                <DialogTitle className="text-lg font-semibold text-gray-900">{title}</DialogTitle>
+            <DialogPanel className={`w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-soft`}>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-surface-200">
+                <DialogTitle className="text-lg font-semibold text-surface-900">{title}</DialogTitle>
                 <button
                   onClick={onClose}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                  className="p-1.5 text-surface-400 hover:text-surface-600 rounded-xl hover:bg-surface-100 transition-colors"
                 >
                   <X size={20} />
                 </button>
