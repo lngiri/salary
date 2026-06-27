@@ -6,7 +6,7 @@ const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/api/salary-heads', listSalaryHeads);
-router.put('/api/salary-heads/:id', updateSalaryHead);
+router.get('/salary-heads', listSalaryHeads);
+router.put('/salary-heads/:id', updateSalaryHead);
 
 export default router;

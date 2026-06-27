@@ -20,7 +20,7 @@ app.use(authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api', salaryStructureRoutes);
 app.use('/api/payroll', payrollRoutes);
-app.use(salaryHeadRoutes);
+app.use('/api', salaryHeadRoutes);
 
 // Public health check route for Docker/container orchestration
 app.get('/api/health', (req, res) => {
