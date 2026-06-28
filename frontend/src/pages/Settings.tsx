@@ -2,11 +2,16 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { FiscalYear, SalaryHead } from '../types';
-import { Plus, Calendar, DollarSign, AlertCircle, Pencil } from 'lucide-react';
+import { Plus, Calendar, DollarSign, AlertCircle, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '../components/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { FullPageLoader } from '../components/LoadingSpinner';
+
+interface TaxSlabRow {
+  limit: string;
+  rate: string;
+}
 
 export const Settings = () => {
   const queryClient = useQueryClient();
@@ -17,8 +22,14 @@ export const Settings = () => {
     year: '',
     startDate: '',
     endDate: '',
-    taxSlabs: '[]',
   });
+  const [taxSlabs, setTaxSlabs] = useState<TaxSlabRow[]>([
+    { limit: '500000', rate: '0' },
+    { limit: '200000', rate: '10' },
+    { limit: '300000', rate: '20' },
+    { limit: '1000000', rate: '30' },
+    { limit: '', rate: '36' },
+  ]);
   const [salaryHeadForm, setSalaryHeadForm] = useState({
     name: '',
     type: 'EARNING' as 'EARNING' | 'DEDUCTION',
@@ -30,18 +41,25 @@ export const Settings = () => {
     queryFn: () => api.get('/config/fiscal-years').then((r) => r.data),
   });
 
-  const { data: salaryHeadsData, isLoading: loadingSalaryHeads } = useQuery<{ salaryHeads: SalaryHead[] }>({
+  const { data: salaryHeads, isLoading: loadingSalaryHeads } = useQuery<SalaryHead[]>({
     queryKey: ['salary-heads'],
     queryFn: () => api.get('/salary-heads').then((r) => r.data),
   });
 
   const addFiscalYearMutation = useMutation({
-    mutationFn: (data: typeof fiscalYearForm) =>
+    mutationFn: (data: typeof fiscalYearForm & { taxSlabs: string }) =>
       api.post('/config/fiscal-years', data).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fiscal-years'] });
       setShowAddFiscalYear(false);
-      setFiscalYearForm({ year: '', startDate: '', endDate: '', taxSlabs: '[]' });
+      setFiscalYearForm({ year: '', startDate: '', endDate: '' });
+      setTaxSlabs([
+        { limit: '500000', rate: '0' },
+        { limit: '200000', rate: '10' },
+        { limit: '300000', rate: '20' },
+        { limit: '1000000', rate: '30' },
+        { limit: '', rate: '36' },
+      ]);
     },
   });
 
@@ -66,7 +84,14 @@ export const Settings = () => {
 
   const handleAddFiscalYear = (e: React.FormEvent) => {
     e.preventDefault();
-    addFiscalYearMutation.mutate(fiscalYearForm);
+    const slabJson = JSON.stringify(
+      taxSlabs.map((s) => ({
+        limit: s.limit ? parseInt(s.limit) : null,
+        rate: parseFloat(s.rate),
+        type: 'tax',
+      }))
+    );
+    addFiscalYearMutation.mutate({ ...fiscalYearForm, taxSlabs: slabJson });
   };
 
   const handleAddSalaryHead = (e: React.FormEvent) => {
@@ -83,18 +108,32 @@ export const Settings = () => {
     });
   };
 
+  const addSlabRow = () => {
+    setTaxSlabs([...taxSlabs, { limit: '', rate: '' }]);
+  };
+
+  const removeSlabRow = (index: number) => {
+    setTaxSlabs(taxSlabs.filter((_, i) => i !== index));
+  };
+
+  const updateSlabRow = (index: number, field: 'limit' | 'rate', value: string) => {
+    const updated = [...taxSlabs];
+    updated[index][field] = value;
+    setTaxSlabs(updated);
+  };
+
   if (loadingFiscalYears || loadingSalaryHeads) {
     return <FullPageLoader message="Loading settings..." />;
   }
 
   const fiscalYears = fiscalYearsData?.fiscalYears || [];
-  const salaryHeads = salaryHeadsData?.salaryHeads || [];
+  const salaryHeadsList = salaryHeads || [];
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 mt-1">Configure fiscal years and salary components</p>
+        <p className="text-gray-500 mt-1">Configure fiscal years, tax slabs, and salary components</p>
       </div>
 
       {/* Fiscal Years Section */}
@@ -152,22 +191,76 @@ export const Settings = () => {
                   />
                 </div>
               </div>
+
+              {/* Tax Slabs Table */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tax Slabs (JSON)
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tax Slabs
                 </label>
-                <textarea
-                  value={fiscalYearForm.taxSlabs}
-                  onChange={(e) => setFiscalYearForm({ ...fiscalYearForm, taxSlabs: e.target.value })}
-                  placeholder='[{"min": 0, "max": 300000, "rate": 1}, ...]'
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                />
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">#</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Income Limit (Rs.)</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Tax Rate (%)</th>
+                        <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {taxSlabs.map((slab, index) => (
+                        <tr key={index}>
+                          <td className="px-4 py-2 text-gray-500 text-sm">{index + 1}</td>
+                          <td className="px-4 py-2">
+                            <input
+                              type="number"
+                              value={slab.limit}
+                              onChange={(e) => updateSlabRow(index, 'limit', e.target.value)}
+                              placeholder={index === taxSlabs.length - 1 ? 'Unlimited' : 'Amount'}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={slab.rate}
+                              onChange={(e) => updateSlabRow(index, 'rate', e.target.value)}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => removeSlabRow(index)}
+                              className="text-red-500 hover:text-red-700 p-1"
+                              title="Remove slab"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button
+                  type="button"
+                  onClick={addSlabRow}
+                  className="mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                >
+                  <Plus size={14} />
+                  Add tax slab
+                </button>
+                <p className="mt-1 text-xs text-gray-400">
+                  Last row with empty limit = applies to all remaining income. Rates are percentages.
+                </p>
               </div>
+
               {addFiscalYearMutation.isError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
                   <AlertCircle size={16} />
-                  Failed to add fiscal year. Please check the format.
+                  Failed to add fiscal year. Check that all fields are valid and the year name is unique.
                 </div>
               )}
               <div className="flex gap-3">
@@ -189,33 +282,59 @@ export const Settings = () => {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Year</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Start Date</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">End Date</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tax Slabs</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {fiscalYears.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
-                    No fiscal years configured
+                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    No fiscal years configured. Add one to start running payroll.
                   </td>
                 </tr>
               ) : (
-                fiscalYears.map((fy) => (
-                  <tr key={fy.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">{fy.year}</td>
-                    <td className="px-6 py-4 text-gray-700">{new Date(fy.startDate).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-gray-700">{new Date(fy.endDate).toLocaleDateString()}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          fy.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {fy.isActive ? 'ACTIVE' : 'INACTIVE'}
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                fiscalYears.map((fy) => {
+                  const slabs = Array.isArray(fy.taxSlabs)
+                    ? (fy.taxSlabs as { limit: number | null; rate: number }[])
+                    : [];
+                  return (
+                    <tr key={fy.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 font-medium text-gray-900">{fy.name}</td>
+                      <td className="px-6 py-4 text-gray-700">{new Date(fy.startDate).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-gray-700">{new Date(fy.endDate).toLocaleDateString()}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {slabs.map((s: { limit: number | null; rate: number }, i: number) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"
+                            >
+                              {s.limit === null ? 'Above' : `≤ Rs.${(+s.limit).toLocaleString()}`} @ {s.rate}%
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                      {(() => {
+                        const now = new Date();
+                        const s = new Date(fy.startDate);
+                        const e = new Date(fy.endDate);
+                        const isCurrent = s <= now && now <= e;
+                        return (
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              isCurrent ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {isCurrent ? 'ACTIVE' : 'INACTIVE'}
+                          </span>
+                        );
+                      })()}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -285,7 +404,7 @@ export const Settings = () => {
               {addSalaryHeadMutation.isError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
                   <AlertCircle size={16} />
-                  Failed to add salary head.
+                  Failed to add salary head. The name may already exist or you may not have permission.
                 </div>
               )}
               <div className="flex gap-3">
@@ -312,14 +431,14 @@ export const Settings = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {salaryHeads.length === 0 ? (
+              {salaryHeadsList.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                    No salary heads configured
+                    No salary heads configured. Add one to build employee salary structures.
                   </td>
                 </tr>
               ) : (
-                salaryHeads.map((head) => (
+                salaryHeadsList.map((head) => (
                   <tr key={head.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900">{head.name}</td>
                     <td className="px-6 py-4">
@@ -376,7 +495,7 @@ export const Settings = () => {
             {updateLegalReferenceMutation.isError && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
                 <AlertCircle size={16} />
-                Failed to update legal reference.
+                Failed to update legal reference. Please try again.
               </div>
             )}
             <div className="flex gap-3">

@@ -16,10 +16,12 @@ export const Reports = () => {
     queryFn: () => api.get('/config/fiscal-years').then((r) => r.data),
   });
 
-  const { data: periods, isLoading: loadingPeriods } = useQuery<{ periods: PayrollPeriod[] }>({
+  const { data: periodsRes, isLoading: loadingPeriods } = useQuery<{ data: PayrollPeriod[]; total: number }>({
     queryKey: ['payroll-periods', 'all'],
-    queryFn: () => api.get('/payroll/periods?limit=100&status=paid').then((r) => r.data),
+    queryFn: () => api.get('/payroll/periods?limit=100').then((r) => r.data),
   });
+
+  const periodsList = periodsRes?.data || [];
 
   const downloadETDS = () => {
     if (!selectedFiscalYearId) return;
@@ -71,7 +73,7 @@ export const Reports = () => {
                   <option value="">Select fiscal year</option>
                   {fiscalYears?.fiscalYears?.map((fy) => (
                     <option key={fy.id} value={fy.id}>
-                      {fy.year}
+                      {fy.name}
                     </option>
                   ))}
                 </select>
@@ -120,7 +122,7 @@ export const Reports = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
                 >
                   <option value="">Select payroll period</option>
-                  {periods?.periods?.map((period) => (
+                  {periodsList.map((period) => (
                     <option key={period.id} value={period.id}>
                       {new Date(period.periodStart).toLocaleDateString()} -{' '}
                       {new Date(period.periodEnd).toLocaleDateString()}

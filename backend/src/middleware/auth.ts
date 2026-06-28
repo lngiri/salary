@@ -11,7 +11,7 @@ export interface AuthenticatedRequest extends Request {
   user?: AuthPayload;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'devsecret';
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export const authenticateToken = (
   req: AuthenticatedRequest,

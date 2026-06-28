@@ -98,38 +98,39 @@ async function main() {
 
   const employeesData = [
     // Below 500k annual (no tax): ~20k-41k monthly
-    { firstName: 'Ram', lastName: 'Sharma', pan: '234567890', basic: 25000, joined: '2022-03-15', dept: 'Engineering', desig: 'Junior Developer', dob: '1998-05-12' },
-    { firstName: 'Sita', lastName: 'Kumari', pan: '345678901', basic: 28000, joined: '2021-07-01', dept: 'HR', desig: 'HR Officer', dob: '1996-09-22' },
-    { firstName: 'Hari', lastName: 'Prasad', pan: '456789012', basic: 32000, joined: '2023-01-10', dept: 'Finance', desig: 'Accountant', dob: '1995-03-18' },
-    { firstName: 'Gita', lastName: 'Thapa', pan: '567890123', basic: 35000, joined: '2020-11-25', dept: 'Admin', desig: 'Office Assistant', dob: '1997-07-08' },
-    { firstName: 'Krishna', lastName: 'Acharya', pan: '678901234', basic: 38000, joined: '2019-06-30', dept: 'Engineering', desig: 'Senior Developer', dob: '1993-12-01' },
+    { firstName: 'Ram', lastName: 'Sharma', pan: '234567890', basic: 25000, joined: '2022-03-15', dept: 'Engineering', desig: 'Junior Developer', dob: '1998-05-12', gender: 'MALE', empType: 'PERMANENT' },
+    { firstName: 'Sita', lastName: 'Kumari', pan: '345678901', basic: 28000, joined: '2021-07-01', dept: 'HR', desig: 'HR Officer', dob: '1996-09-22', gender: 'FEMALE', empType: 'PERMANENT' },
+    { firstName: 'Hari', lastName: 'Prasad', pan: '456789012', basic: 32000, joined: '2023-01-10', dept: 'Finance', desig: 'Accountant', dob: '1995-03-18', gender: 'MALE', empType: 'PERMANENT' },
+    { firstName: 'Gita', lastName: 'Thapa', pan: '567890123', basic: 35000, joined: '2020-11-25', dept: 'Admin', desig: 'Office Assistant', dob: '1997-07-08', gender: 'FEMALE', empType: 'PERMANENT' },
+    { firstName: 'Krishna', lastName: 'Acharya', pan: '678901234', basic: 38000, joined: '2019-06-30', dept: 'Engineering', desig: 'Senior Developer', dob: '1993-12-01', gender: 'MALE', empType: 'PERMANENT' },
     // 500k-700k (10% slab): ~42k-58k monthly
-    { firstName: 'Bibek', lastName: 'Ranjit', pan: '789012345', basic: 45000, joined: '2018-04-15', dept: 'Engineering', desig: 'Tech Lead', dob: '1990-08-14' },
-    { firstName: 'Nirmala', lastName: 'Basnet', pan: '890123456', basic: 48000, joined: '2021-02-20', dept: 'Sales', desig: 'Sales Executive', dob: '1994-11-30' },
-    { firstName: 'Rajesh', lastName: 'Khatri', pan: '901234567', basic: 52000, joined: '2017-09-12', dept: 'Engineering', desig: 'Senior Engineer', dob: '1989-04-25' },
-    { firstName: 'Sunita', lastName: 'Magar', pan: '112233445', basic: 55000, joined: '2020-05-18', dept: 'Marketing', desig: 'Marketing Manager', dob: '1992-01-09' },
-    { firstName: 'Anil', lastName: 'Tamang', pan: '223344556', basic: 58000, joined: '2016-08-22', dept: 'Finance', desig: 'Finance Manager', dob: '1987-06-17' },
+    { firstName: 'Bibek', lastName: 'Ranjit', pan: '789012345', basic: 45000, joined: '2018-04-15', dept: 'Engineering', desig: 'Tech Lead', dob: '1990-08-14', gender: 'MALE', empType: 'PERMANENT' },
+    { firstName: 'Nirmala', lastName: 'Basnet', pan: '890123456', basic: 48000, joined: '2021-02-20', dept: 'Sales', desig: 'Sales Executive', dob: '1994-11-30', gender: 'FEMALE', empType: 'PERMANENT' },
+    { firstName: 'Rajesh', lastName: 'Khatri', pan: '901234567', basic: 52000, joined: '2017-09-12', dept: 'Engineering', desig: 'Senior Engineer', dob: '1989-04-25', gender: 'MALE', empType: 'PERMANENT' },
+    { firstName: 'Sunita', lastName: 'Magar', pan: '112233445', basic: 55000, joined: '2020-05-18', dept: 'Marketing', desig: 'Marketing Manager', dob: '1992-01-09', gender: 'FEMALE', empType: 'PERMANENT' },
+    { firstName: 'Anil', lastName: 'Tamang', pan: '223344556', basic: 58000, joined: '2016-08-22', dept: 'Finance', desig: 'Finance Manager', dob: '1987-06-17', gender: 'MALE', empType: 'PERMANENT' },
     // 700k-1M (20% slab): ~60k-85k monthly
-    { firstName: 'Prakash', lastName: 'Gurung', pan: '334455667', basic: 65000, joined: '2015-03-10', dept: 'Engineering', desig: 'Architect', dob: '1985-02-28' },
-    { firstName: 'Mina', lastName: 'Rai', pan: '445566778', basic: 70000, joined: '2014-07-15', dept: 'Operations', desig: 'Operations Head', dob: '1984-09-05' },
-    { firstName: 'Dinesh', lastName: 'Newar', pan: '556677889', basic: 75000, joined: '2013-12-01', dept: 'Engineering', desig: 'Senior Architect', dob: '1983-10-20' },
-    { firstName: 'Asha', lastName: 'Sherpa', pan: '667788990', basic: 80000, joined: '2012-04-18', dept: 'HR', desig: 'HR Director', dob: '1982-03-12' },
-    { firstName: 'Santosh', lastName: 'Maharjan', pan: '778899001', basic: 85000, joined: '2011-06-25', dept: 'Admin', desig: 'Admin Manager', dob: '1981-07-30' },
+    { firstName: 'Prakash', lastName: 'Gurung', pan: '334455667', basic: 65000, joined: '2015-03-10', dept: 'Engineering', desig: 'Architect', dob: '1985-02-28', gender: 'MALE', empType: 'PERMANENT' },
+    { firstName: 'Mina', lastName: 'Rai', pan: '445566778', basic: 70000, joined: '2014-07-15', dept: 'Operations', desig: 'Operations Head', dob: '1984-09-05', gender: 'FEMALE', empType: 'PERMANENT' },
+    { firstName: 'Dinesh', lastName: 'Newar', pan: '556677889', basic: 75000, joined: '2013-12-01', dept: 'Engineering', desig: 'Senior Architect', dob: '1983-10-20', gender: 'MALE', empType: 'PERMANENT' },
+    { firstName: 'Asha', lastName: 'Sherpa', pan: '667788990', basic: 80000, joined: '2012-04-18', dept: 'HR', desig: 'HR Director', dob: '1982-03-12', gender: 'FEMALE', empType: 'PERMANENT' },
+    { firstName: 'Santosh', lastName: 'Maharjan', pan: '778899001', basic: 85000, joined: '2011-06-25', dept: 'Admin', desig: 'Admin Manager', dob: '1981-07-30', gender: 'MALE', empType: 'PERMANENT' },
     // Above 1M (30%+ slab): ~90k-120k monthly
-    { firstName: 'Ramesh', lastName: 'Lama', pan: '889900112', basic: 95000, joined: '2010-02-14', dept: 'Engineering', desig: 'Principal Engineer', dob: '1980-11-15' },
-    { firstName: 'Kalpana', lastName: 'Gurung', pan: '990011223', basic: 100000, joined: '2009-09-01', dept: 'Finance', desig: 'CFO', dob: '1979-04-22' },
-    { firstName: 'Nabin', lastName: 'Tamang', pan: '001122334', basic: 105000, joined: '2008-05-20', dept: 'Operations', desig: 'COO', dob: '1978-08-10' },
-    { firstName: 'Rekha', lastName: 'Sharma', pan: '112233440', basic: 115000, joined: '2007-01-08', dept: 'Legal', desig: 'Legal Head', dob: '1977-12-25' },
-    { firstName: 'Bikash', lastName: 'Poudel', pan: '223344550', basic: 120000, joined: '2006-06-30', dept: 'Engineering', desig: 'VP Engineering', dob: '1976-05-18' },
+    { firstName: 'Ramesh', lastName: 'Lama', pan: '889900112', basic: 95000, joined: '2010-02-14', dept: 'Engineering', desig: 'Principal Engineer', dob: '1980-11-15', gender: 'MALE', empType: 'PERMANENT' },
+    { firstName: 'Kalpana', lastName: 'Gurung', pan: '990011223', basic: 100000, joined: '2009-09-01', dept: 'Finance', desig: 'CFO', dob: '1979-04-22', gender: 'FEMALE', empType: 'PERMANENT' },
+    { firstName: 'Nabin', lastName: 'Tamang', pan: '001122334', basic: 105000, joined: '2008-05-20', dept: 'Operations', desig: 'COO', dob: '1978-08-10', gender: 'MALE', empType: 'PERMANENT' },
+    { firstName: 'Rekha', lastName: 'Sharma', pan: '112233440', basic: 115000, joined: '2007-01-08', dept: 'Legal', desig: 'Legal Head', dob: '1977-12-25', gender: 'FEMALE', empType: 'CONTRACT' },
+    { firstName: 'Bikash', lastName: 'Poudel', pan: '223344550', basic: 120000, joined: '2006-06-30', dept: 'Engineering', desig: 'VP Engineering', dob: '1976-05-18', gender: 'MALE', empType: 'PERMANENT' },
   ];
 
   const createdEmployees = [];
-  for (const emp of employeesData) {
+  for (const [index, emp] of employeesData.entries()) {
     const employee = await prisma.employee.upsert({
       where: { pan: emp.pan },
       update: {},
       create: {
         organisationId: org.id,
+        employeeCode: `EMP-${String(index + 1).padStart(4, '0')}`,
         firstName: emp.firstName,
         lastName: emp.lastName,
         pan: emp.pan,
@@ -139,6 +140,10 @@ async function main() {
         address: 'Kathmandu, Nepal',
         designation: emp.desig,
         department: emp.dept,
+        gender: emp.gender as 'MALE' | 'FEMALE' | 'OTHER' | undefined,
+        employmentType: emp.empType as 'PERMANENT' | 'CONTRACT' | 'PROBATION' | 'INTERN' | 'TEMPORARY' | undefined,
+        nationality: 'Nepali',
+        ssfId: `SSF-${Math.floor(Math.random() * 900000 + 100000)}`,
         bankAccountNo: `000${Math.floor(Math.random() * 9000000000 + 1000000000)}`,
         bankName: ['NMB Bank', 'Nepal Investment Bank', 'Standard Chartered', 'Himalaya Bank', 'NIC Asia'][Math.floor(Math.random() * 5)],
         dateOfJoining: new Date(emp.joined),

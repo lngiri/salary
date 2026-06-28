@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { FiscalYear } from '../types';
 import { Calendar, DollarSign, Users, CheckCircle } from 'lucide-react';
@@ -8,15 +9,17 @@ import { Button } from '../components/Button';
 import { FullPageLoader } from '../components/LoadingSpinner';
 
 interface PayrollRunResult {
-  periodId: number;
-  fiscalYearId: number;
-  periodStart: string;
-  periodEnd: string;
+  payrollPeriod: {
+    id: number;
+    periodStart: string;
+    periodEnd: string;
+    fiscalYearId: number;
+  };
   totalEmployees: number;
-  totalGrossPayroll: number;
   totalEarnings: number;
   totalDeductions: number;
-  totalNetPayroll: number;
+  totalEmployerContributions: number;
+  netPayroll: number;
 }
 
 export const PayrollRun = () => {
@@ -83,7 +86,7 @@ export const PayrollRun = () => {
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mb-2">
                   <DollarSign className="text-green-600" size={24} />
                 </div>
-                <p className="text-2xl font-bold text-gray-900">NPR {runResult.totalGrossPayroll.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">Rs. {runResult.totalEarnings.toLocaleString()}</p>
                 <p className="text-sm text-gray-500">Gross Payroll</p>
               </div>
               <div className="text-center">
@@ -97,7 +100,7 @@ export const PayrollRun = () => {
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 mb-2">
                   <DollarSign className="text-purple-600" size={24} />
                 </div>
-                <p className="text-2xl font-bold text-gray-900">NPR {runResult.totalNetPayroll.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">Rs. {runResult.netPayroll.toLocaleString()}</p>
                 <p className="text-sm text-gray-500">Net Payroll</p>
               </div>
             </div>
@@ -110,19 +113,19 @@ export const PayrollRun = () => {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-500">Period Start</p>
-                <p className="font-medium">{new Date(runResult.periodStart).toLocaleDateString()}</p>
+                <p className="font-medium">{new Date(runResult.payrollPeriod.periodStart).toLocaleDateString()}</p>
               </div>
               <div>
                 <p className="text-gray-500">Period End</p>
-                <p className="font-medium">{new Date(runResult.periodEnd).toLocaleDateString()}</p>
+                <p className="font-medium">{new Date(runResult.payrollPeriod.periodEnd).toLocaleDateString()}</p>
               </div>
               <div>
                 <p className="text-gray-500">Total Earnings</p>
-                <p className="font-medium text-green-600">NPR {runResult.totalEarnings.toLocaleString()}</p>
+                <p className="font-medium text-green-600">Rs. {runResult.totalEarnings.toLocaleString()}</p>
               </div>
               <div>
                 <p className="text-gray-500">Period ID</p>
-                <p className="font-medium">#{runResult.periodId}</p>
+                <p className="font-medium">#{runResult.payrollPeriod.id}</p>
               </div>
             </div>
           </CardBody>
@@ -132,9 +135,9 @@ export const PayrollRun = () => {
           <Button variant="outline" onClick={handleReset}>
             Run Another Payroll
           </Button>
-          <a href={`/payroll/${runResult.periodId}`}>
+          <Link to={`/payroll/${runResult.payrollPeriod.id}`}>
             <Button>View Payroll Details</Button>
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -163,7 +166,7 @@ export const PayrollRun = () => {
                 <option value="">Select fiscal year</option>
                 {fiscalYears?.fiscalYears?.map((fy) => (
                   <option key={fy.id} value={fy.id}>
-                    {fy.year} ({new Date(fy.startDate).toLocaleDateString()} - {new Date(fy.endDate).toLocaleDateString()})
+                    {fy.name} ({new Date(fy.startDate).toLocaleDateString()} - {new Date(fy.endDate).toLocaleDateString()})
                   </option>
                 ))}
               </select>

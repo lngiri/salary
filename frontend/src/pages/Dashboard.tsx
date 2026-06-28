@@ -5,8 +5,8 @@ import { Card, CardBody } from '../components/Card';
 import { FullPageLoader } from '../components/LoadingSpinner';
 import { Link } from 'react-router-dom';
 
-interface CountResponse {
-  count: number;
+interface EmployeeListResponse {
+  total: number;
 }
 
 interface QuickLinkProps {
@@ -45,17 +45,17 @@ const QuickLink = ({ to, icon: Icon, label, description, variant = 'default' }: 
 );
 
 export const Dashboard = () => {
-  const { data: totalEmployees, isLoading: loadingTotal } = useQuery<CountResponse>({
+  const { data: totalEmployees, isLoading: loadingTotal } = useQuery<EmployeeListResponse>({
     queryKey: ['employees', 'total'],
     queryFn: () => api.get('/employees?status=ALL&limit=1').then(r => r.data),
   });
 
-  const { data: activeEmployees, isLoading: loadingActive } = useQuery<CountResponse>({
+  const { data: activeEmployees, isLoading: loadingActive } = useQuery<EmployeeListResponse>({
     queryKey: ['employees', 'active'],
     queryFn: () => api.get('/employees?status=ACTIVE&limit=1').then(r => r.data),
   });
 
-  const { data: payrollPeriods, isLoading: loadingPeriods } = useQuery<CountResponse>({
+  const { data: payrollPeriods, isLoading: loadingPeriods } = useQuery<{ count: number }>({
     queryKey: ['payroll-periods', 'count'],
     queryFn: () => api.get('/payroll/periods?limit=1').then(r => r.data),
   });
@@ -69,24 +69,24 @@ export const Dashboard = () => {
   const stats = [
     {
       label: 'Total Employees',
-      value: totalEmployees?.count ?? 0,
+      value: totalEmployees?.total ?? 0,
       icon: Users,
       gradient: 'from-blue-500 to-blue-600',
-      bg: 'bg-blue-50',
+      link: '/employees',
     },
     {
       label: 'Active Employees',
-      value: activeEmployees?.count ?? 0,
+      value: activeEmployees?.total ?? 0,
       icon: CheckCircle,
       gradient: 'from-emerald-500 to-emerald-600',
-      bg: 'bg-emerald-50',
+      link: '/employees?status=ACTIVE',
     },
     {
       label: 'Payroll Periods',
       value: payrollPeriods?.count ?? 0,
       icon: CalendarDays,
       gradient: 'from-purple-500 to-purple-600',
-      bg: 'bg-purple-50',
+      link: '/payroll/history',
     },
   ];
 
@@ -103,8 +103,13 @@ export const Dashboard = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {stats.map((stat, i) => (
-          <div key={stat.label} className="animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
-            <Card className="card-hover">
+          <Link
+            key={stat.label}
+            to={stat.link}
+            className="animate-slide-up block"
+            style={{ animationDelay: `${i * 100}ms` }}
+          >
+            <Card className="card-hover cursor-pointer">
               <CardBody className="flex items-center gap-4 p-6">
                 <div className={`p-3.5 rounded-xl bg-gradient-to-br ${stat.gradient} shadow-soft`}>
                   <stat.icon className="text-white" size={24} />
@@ -115,7 +120,7 @@ export const Dashboard = () => {
                 </div>
               </CardBody>
             </Card>
-          </div>
+          </Link>
         ))}
       </div>
 

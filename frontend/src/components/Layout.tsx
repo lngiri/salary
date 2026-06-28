@@ -10,6 +10,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Clock,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -17,6 +18,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/employees', label: 'Employees', icon: Users },
   { to: '/payroll/run', label: 'Payroll', icon: Wallet },
+  { to: '/payroll/history', label: 'Payroll History', icon: Clock },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/settings', label: 'Settings', icon: Settings },
 ];

@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 export const PayrollHistory = () => {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useQuery<{ periods: PayrollPeriod[] }>({
+  const { data, isLoading, error } = useQuery<{ data: PayrollPeriod[]; total: number }>({
     queryKey: ['payroll-periods'],
     queryFn: () => api.get('/payroll/periods?limit=100').then((r) => r.data),
   });
@@ -26,7 +26,7 @@ export const PayrollHistory = () => {
     return <FullPageLoader message="Loading payroll history..." />;
   }
 
-  const periods = data?.periods || [];
+  const periods = data?.data || [];
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -83,25 +83,21 @@ export const PayrollHistory = () => {
                       {new Date(period.periodEnd).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-gray-700">
-                      {period.fiscalYear?.year || `FY #${period.fiscalYearId}`}
+                      {period.fiscalYear?.name || `FY #${period.fiscalYearId}`}
                     </td>
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          period.status === 'paid'
+                          period.locked
                             ? 'bg-green-100 text-green-800'
-                            : period.status === 'approved'
-                            ? 'bg-blue-100 text-blue-800'
-                            : period.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-gray-100 text-gray-800'
+                            : 'bg-yellow-100 text-yellow-800'
                         }`}
                       >
-                        {period.status?.toUpperCase() || 'N/A'}
+                        {period.locked ? 'LOCKED' : 'DRAFT'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {period.status === 'paid' ? (
+                      {period.locked ? (
                         <span className="inline-flex items-center text-gray-500">
                           <Lock size={16} className="mr-1" />
                           Locked

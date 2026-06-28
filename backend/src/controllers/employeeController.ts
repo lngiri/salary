@@ -22,6 +22,7 @@ export const listEmployees = async (req: Request, res: Response): Promise<void> 
       where.OR = [
         { firstName: { contains: String(search), mode: 'insensitive' } },
         { lastName: { contains: String(search), mode: 'insensitive' } },
+        { employeeCode: { contains: String(search), mode: 'insensitive' } },
         { pan: { contains: String(search), mode: 'insensitive' } },
         { designation: { contains: String(search), mode: 'insensitive' } },
       ];
@@ -43,14 +44,16 @@ export const listEmployees = async (req: Request, res: Response): Promise<void> 
       }),
     ]);
 
+    const mapped = employees.map(e => ({
+      ...e,
+      fullName: `${e.firstName} ${e.lastName}`,
+    }));
+
     res.json({
-      data: employees,
-      meta: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        totalPages: Math.ceil(total / limitNum),
-      },
+      employees: mapped,
+      total,
+      page: pageNum,
+      limit: limitNum,
     });
   } catch (error) {
     console.error('listEmployees error:', error);
@@ -71,6 +74,10 @@ export const getEmployee = async (req: Request, res: Response): Promise<void> =>
           orderBy: { effectiveFrom: 'desc' },
         },
         leaveRecords: { orderBy: { id: 'desc' } },
+        emergencyContacts: { orderBy: { id: 'asc' } },
+        educationRecords: { orderBy: { yearPassed: 'desc' } },
+        workHistories: { orderBy: { startDate: 'desc' } },
+        documents: { orderBy: { uploadedAt: 'desc' } },
       },
     });
 
@@ -79,11 +86,31 @@ export const getEmployee = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    res.json(employee);
+    res.json({
+      ...employee,
+      fullName: `${employee.firstName} ${employee.lastName}`,
+    });
   } catch (error) {
     console.error('getEmployee error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+const generateEmployeeCode = async (): Promise<string> => {
+  const lastEmployee = await prisma.employee.findFirst({
+    orderBy: { id: 'desc' },
+    select: { employeeCode: true },
+  });
+
+  let nextNum = 1;
+  if (lastEmployee?.employeeCode) {
+    const match = lastEmployee.employeeCode.match(/EMP-(\d+)/);
+    if (match) {
+      nextNum = parseInt(match[1], 10) + 1;
+    }
+  }
+
+  return `EMP-${String(nextNum).padStart(4, '0')}`;
 };
 
 export const createEmployee = async (req: Request, res: Response): Promise<void> => {
@@ -95,34 +122,52 @@ export const createEmployee = async (req: Request, res: Response): Promise<void>
       designation,
       dateOfJoining,
       basicSalary,
+      employeeCode,
       ssfId,
       dateOfBirth,
       phone,
       email,
       address,
       department,
+      employmentType,
+      gender,
+      maritalStatus,
+      nationality,
+      citizenshipNo,
       bankAccountNo,
       bankName,
     } = req.body;
 
     // Validate required fields
     if (!firstName || !lastName || !pan || !designation || !dateOfJoining || basicSalary === undefined) {
-      res.status(400).json({ message: 'firstName, lastName, pan, designation, dateOfJoining, basicSalary are required' });
+      res.status(400).json({
+        message: 'Validation failed',
+        details: [
+          !firstName ? 'First name is required' : null,
+          !lastName ? 'Last name is required' : null,
+          !pan ? 'PAN number is required' : null,
+          !designation ? 'Designation is required' : null,
+          !dateOfJoining ? 'Date of joining is required' : null,
+          basicSalary === undefined ? 'Basic salary is required' : null,
+        ].filter(Boolean),
+      });
       return;
     }
 
     // Validate PAN format (9 digits)
     if (!PAN_REGEX.test(pan)) {
-      res.status(400).json({ message: 'PAN must be exactly 9 digits' });
+      res.status(400).json({ message: 'PAN must be exactly 9 digits. Example: 123456789' });
       return;
     }
 
     // Check PAN uniqueness
     const existingPan = await prisma.employee.findUnique({ where: { pan } });
     if (existingPan) {
-      res.status(409).json({ message: 'Employee with this PAN already exists' });
+      res.status(409).json({ message: `PAN ${pan} is already assigned to another employee. Each employee must have a unique PAN.` });
       return;
     }
+
+    const code = employeeCode || await generateEmployeeCode();
 
     const result = await prisma.$transaction(async (tx) => {
       // Create employee
@@ -131,6 +176,7 @@ export const createEmployee = async (req: Request, res: Response): Promise<void>
           firstName,
           lastName,
           pan,
+          employeeCode: code,
           designation,
           dateOfJoining: new Date(dateOfJoining),
           ssfId: ssfId ?? null,
@@ -139,6 +185,11 @@ export const createEmployee = async (req: Request, res: Response): Promise<void>
           email: email ?? null,
           address: address ?? null,
           department: department ?? null,
+          employmentType: employmentType ?? null,
+          gender: gender ?? null,
+          maritalStatus: maritalStatus ?? null,
+          nationality: nationality ?? null,
+          citizenshipNo: citizenshipNo ?? null,
           bankAccountNo: bankAccountNo ?? null,
           bankName: bankName ?? null,
           organisationId: 1,
@@ -181,6 +232,7 @@ export const updateEmployee = async (req: Request, res: Response): Promise<void>
     const {
       firstName,
       lastName,
+      employeeCode,
       ssfId,
       dateOfBirth,
       phone,
@@ -188,9 +240,17 @@ export const updateEmployee = async (req: Request, res: Response): Promise<void>
       address,
       designation,
       department,
+      employmentType,
+      gender,
+      maritalStatus,
+      nationality,
+      citizenshipNo,
+      photoUrl,
       bankAccountNo,
       bankName,
       dateOfJoining,
+      reasonForLeaving,
+      basicSalary,
     } = req.body;
 
     const employeeId = parseInt(id, 10);
@@ -205,6 +265,7 @@ export const updateEmployee = async (req: Request, res: Response): Promise<void>
     const updateData: Record<string, unknown> = {};
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
+    if (employeeCode !== undefined) updateData.employeeCode = employeeCode;
     if (ssfId !== undefined) updateData.ssfId = ssfId;
     if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
     if (phone !== undefined) updateData.phone = phone;
@@ -212,13 +273,48 @@ export const updateEmployee = async (req: Request, res: Response): Promise<void>
     if (address !== undefined) updateData.address = address;
     if (designation !== undefined) updateData.designation = designation;
     if (department !== undefined) updateData.department = department;
+    if (employmentType !== undefined) updateData.employmentType = employmentType;
+    if (gender !== undefined) updateData.gender = gender;
+    if (maritalStatus !== undefined) updateData.maritalStatus = maritalStatus;
+    if (nationality !== undefined) updateData.nationality = nationality;
+    if (citizenshipNo !== undefined) updateData.citizenshipNo = citizenshipNo;
+    if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
     if (bankAccountNo !== undefined) updateData.bankAccountNo = bankAccountNo;
     if (bankName !== undefined) updateData.bankName = bankName;
     if (dateOfJoining !== undefined) updateData.dateOfJoining = new Date(dateOfJoining);
+    if (reasonForLeaving !== undefined) updateData.reasonForLeaving = reasonForLeaving;
 
-    const employee = await prisma.employee.update({
-      where: { id: employeeId },
-      data: updateData,
+    const employee = await prisma.$transaction(async (tx) => {
+      const updated = await tx.employee.update({
+        where: { id: employeeId },
+        data: updateData,
+      });
+
+      if (basicSalary !== undefined) {
+        const basicHead = await tx.salaryHead.findFirst({ where: { name: 'Basic' } });
+        if (basicHead) {
+          const existingStruct = await tx.employeeSalaryStructure.findFirst({
+            where: { employeeId, salaryHeadId: basicHead.id, effectiveUntil: null },
+          });
+          if (existingStruct) {
+            await tx.employeeSalaryStructure.update({
+              where: { id: existingStruct.id },
+              data: { monthlyAmount: parseFloat(basicSalary) },
+            });
+          } else {
+            await tx.employeeSalaryStructure.create({
+              data: {
+                employeeId,
+                salaryHeadId: basicHead.id,
+                monthlyAmount: parseFloat(basicSalary),
+                effectiveFrom: new Date(dateOfJoining || existing.dateOfJoining),
+              },
+            });
+          }
+        }
+      }
+
+      return updated;
     });
 
     res.json(employee);
@@ -248,12 +344,13 @@ export const deactivateEmployee = async (req: Request, res: Response): Promise<v
 
     const lastDay = lastWorkingDate ? new Date(lastWorkingDate) : new Date();
 
-    // Update employee status and leaving date
+    // Update employee status, leaving date, and reason
     await prisma.employee.update({
       where: { id: employeeId },
       data: {
         status: 'INACTIVE',
         dateOfLeaving: lastDay,
+        reasonForLeaving: reason ?? null,
       },
     });
 

@@ -15,6 +15,40 @@ export async function listSalaryHeads(req: Request, res: Response) {
   }
 }
 
+export async function createSalaryHead(req: Request, res: Response) {
+  try {
+    const { name, type, category } = req.body;
+
+    if (!name || !type) {
+      res.status(400).json({ message: 'Name and type are required' });
+      return;
+    }
+
+    if (type !== 'EARNING' && type !== 'DEDUCTION') {
+      res.status(400).json({ message: 'Type must be EARNING or DEDUCTION' });
+      return;
+    }
+
+    const existing = await prisma.salaryHead.findUnique({ where: { name } });
+    if (existing) {
+      res.status(409).json({ message: `A salary head named "${name}" already exists` });
+      return;
+    }
+
+      const head = await prisma.salaryHead.create({
+        data: {
+          name,
+          type,
+        },
+      });
+
+    res.status(201).json(head);
+  } catch (error) {
+    console.error('createSalaryHead error:', error);
+    res.status(500).json({ message: 'Failed to create salary head' });
+  }
+}
+
 export async function updateSalaryHead(req: Request, res: Response) {
   try {
     const id = parseInt(req.params.id, 10);

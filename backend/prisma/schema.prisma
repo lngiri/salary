@@ -19,10 +19,11 @@ model Organisation {
 }
 
 model Employee {
-  id             Int                     @id @default(autoincrement())
-  organisationId Int                     @default(1)
-  organisation   Organisation            @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  firstName      String
+  id              Int                     @id @default(autoincrement())
+  organisationId  Int                     @default(1)
+  organisation    Organisation            @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  employeeCode    String?                 @unique
+  firstName       String
   lastName       String
   pan            String                  @unique
   ssfId          String?
@@ -32,19 +33,121 @@ model Employee {
   address        String?
   designation    String
   department     String?
+  employmentType EmploymentType?
+  gender         Gender?
+  maritalStatus  MaritalStatus?
+  nationality    String?
+  citizenshipNo  String?
+  photoUrl       String?
   bankAccountNo  String?
   bankName       String?
   dateOfJoining  DateTime
   dateOfLeaving  DateTime?
+  reasonForLeaving String?
   status         EmployeeStatus          @default(ACTIVE)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
   salaryStructures EmployeeSalaryStructure[]
   payrollTransactions PayrollTransaction[]
   leaveRecords   LeaveRecord[]
+  emergencyContacts EmergencyContact[]
+  educationRecords  Education[]
+  workHistories     WorkHistory[]
+  documents         EmployeeDocument[]
+
+  @@index([organisationId])
 }
 
 enum EmployeeStatus {
   ACTIVE
   INACTIVE
+}
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+  PROBATION
+  INTERN
+  TEMPORARY
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum DocumentType {
+  CITIZENSHIP
+  PASSPORT
+  PHOTO
+  CONTRACT
+  OFFER_LETTER
+  RESUME
+  OTHER
+}
+
+model EmergencyContact {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  name          String
+  relationship  String
+  phone         String
+  address       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([employeeId])
+}
+
+model Education {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  degree        String
+  institution   String
+  board         String?
+  yearPassed    Int?
+  grade         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([employeeId])
+}
+
+model WorkHistory {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company       String
+  position      String
+  startDate     DateTime
+  endDate       DateTime?
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([employeeId])
+}
+
+model EmployeeDocument {
+  id            Int          @id @default(autoincrement())
+  employeeId    Int
+  employee      Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  documentType  DocumentType
+  fileName      String
+  fileUrl       String
+  uploadedAt    DateTime     @default(now())
+
+  @@index([employeeId])
 }
 
 model FiscalYear {
@@ -96,6 +199,9 @@ model EmployeeSalaryStructure {
   monthlyAmount Float
   effectiveFrom DateTime
   effectiveUntil DateTime?
+
+  @@index([employeeId])
+  @@index([salaryHeadId])
 }
 
 model PayrollPeriod {
@@ -106,6 +212,8 @@ model PayrollPeriod {
   periodEnd    DateTime
   locked       Boolean               @default(false)
   transactions PayrollTransaction[]
+
+  @@index([fiscalYearId])
 }
 
 model PayrollTransaction {
@@ -118,6 +226,10 @@ model PayrollTransaction {
   salaryHead              SalaryHead    @relation(fields: [salaryHeadId], references: [id], onDelete: Restrict)
   amount                  Float
   isEmployerContribution  Boolean       @default(false)
+
+  @@index([employeeId])
+  @@index([payrollPeriodId])
+  @@index([salaryHeadId])
 }
 
 model LeaveRecord {
