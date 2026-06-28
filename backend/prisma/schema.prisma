@@ -45,7 +45,7 @@ model Employee {
   reasonForLeaving String?
   status         EmployeeStatus          @default(ACTIVE)
   createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
+  updatedAt      DateTime                @default(now()) @updatedAt
   salaryStructures EmployeeSalaryStructure[]
   payrollTransactions PayrollTransaction[]
   leaveRecords   LeaveRecord[]
@@ -102,7 +102,7 @@ model EmergencyContact {
   phone         String
   address       String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime @default(now()) @updatedAt
 
   @@index([employeeId])
 }
@@ -117,7 +117,7 @@ model Education {
   yearPassed    Int?
   grade         String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime @default(now()) @updatedAt
 
   @@index([employeeId])
 }
@@ -132,7 +132,7 @@ model WorkHistory {
   endDate       DateTime?
   reason        String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime @default(now()) @updatedAt
 
   @@index([employeeId])
 }
